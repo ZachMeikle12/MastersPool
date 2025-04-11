@@ -58,7 +58,7 @@ for group in groups:
     for row in rows:
         if len(row) > 2 and row[3] in group[1]:
             if row[4] == 'E':
-                score += str(row[3] + ' score is: Even' + '  \n')
+                score += str(row[3] + ': Even' + '  \n')
             else:
                 totalscore += int(row[4])
                 score += str(row[3] + ' : ' + row[4] +'  \n')
