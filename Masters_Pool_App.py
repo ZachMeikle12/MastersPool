@@ -36,23 +36,23 @@ for group in groups:
     for row in rows:
         if len(row) > 2 and row[3] in group[1] and row[4] != 'E':
             totalscore += int(row[4])
-    leaderboard.append([group[0], totalscore])     
+    leaderboard.append([group[0], group[1], totalscore])     
     
 scaled_leaderboard =[]
 for x in range (-30, 50):
     for leader in leaderboard:
-        if leader[1] == x:
+        if leader[2] == x:
             scaled_leaderboard.append(leader)
 
 leaderboard_print = ''
 for i in (1,2,3,4,5):
     index = i-1
-    leaderboard_print += ('#' + str(i) + ': ' + scaled_leaderboard[index][0] + ' with a score of: ' + str(scaled_leaderboard[index][1]) + '  \n')
+    leaderboard_print += ('#' + str(i) + ': ' + scaled_leaderboard[index][0] + ' with a score of: ' + str(scaled_leaderboard[index][2]) + '  \n')
 
 st.title('Pool Leaderboard:')
 st.write(leaderboard_print)
 
-for group in groups:
+for group in scaled_leaderboard:
     score = group[0] + "'s Total Score:  \n"
     totalscore = 0
     for row in rows:
@@ -62,6 +62,5 @@ for group in groups:
             else:
                 totalscore += int(row[4])
                 score += str(row[3] + ' : ' + row[4] +'  \n')
-    score += 'Total Score = ' + str(totalscore) + '  \n  \n  \n'   
-    leaderboard.append([group[0], totalscore])     
+    score += 'Total Score = ' + str(totalscore) + '  \n  \n  \n'     
     st.write (score)
