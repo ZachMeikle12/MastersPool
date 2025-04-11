@@ -21,7 +21,6 @@ if table:
         cells = [td.get_text(strip=True) for td in tr.find_all('td')]
         if cells:
             rows.append(cells)
-
 # Scores
 Zach_Players = ['Joaquín Niemann', 'Scottie Scheffler', 'Rory McIlroy', 'Xander Schauffele', 'Collin Morikawa', 'Jon Rahm', 'Patrick Cantlay', 'Min Woo Lee', 'Sepp Straka', 'Corey Conners']
 Chris_Players = ['Jordan Spieth', 'Scottie Scheffler', 'Rory McIlroy', 'Hideki Matsuyama', 'Justin Thomas', 'Jon Rahm', 'Phil Mickelson', 'Robert MacIntyre', 'Dustin Johnson', 'Corey Conners']
@@ -34,11 +33,13 @@ for group in Groups:
     score = group[0] + "'s Total Score:  \n"
     totalscore = 0
     for row in rows:
-        if row[2] in group[1]:
-            if row[3] == 'E':
-                pass
-            else:
-                totalscore += int(row[3])
+        if len(row) > 2:
+            if row[3] in group[1]:
+                if row[4] == 'E':
+                    pass
+                else:
+                    totalscore += int(row[4])
+
     leaderboard.append([group[0], totalscore])     
     
 scaled_leaderboard =[]
@@ -60,12 +61,13 @@ for group in Groups:
     score = group[0] + "'s Total Score:  \n"
     totalscore = 0
     for row in rows:
-        if row[2] in group[1]:
-            if row[3] == 'E':
-                score += str(row[2] + ' score is: Even' + '  \n')
-            else:
-                totalscore += int(row[3])
-                score += str(row[2] + ' score is: ' + row[3] +'  \n')
+        if len(row) > 2:
+            if row[3] in group[1]:
+                if row[4] == 'E':
+                    score += str(row[3] + ' score is: Even' + '  \n')
+                else:
+                    totalscore += int(row[4])
+                    score += str(row[3] + ' : ' + row[4] +'  \n')
     score += 'Total Score = ' + str(totalscore) + '  \n  \n  \n'   
     leaderboard.append([group[0], totalscore])     
     st.write (score)
