@@ -51,6 +51,7 @@ for i in (1,2,3,4,5):
 
 st.title('Pool Leaderboard:')
 st.write(leaderboard_print)
+print(scaled_leaderboard)
 
 for group in scaled_leaderboard:
     score = group[0] + "'s Total Score:  \n"
