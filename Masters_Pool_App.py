@@ -27,23 +27,18 @@ Chris_Players = ['Jordan Spieth', 'Scottie Scheffler', 'Rory McIlroy', 'Hideki M
 Bob_Players = ['Scottie Scheffler', 'Will Zalatoris', 'Corey Conners', 'Collin Morikawa', 'Ludvig Åberg', 'Robert MacIntyre', 'Jon Rahm', 'Tony Finau', 'Rory McIlroy', 'Tom Hoge']
 Matthew_Players = ['Bryson DeChambeau','Tony Finau','Tom Kim', 'Scottie Scheffler', 'Jordan Spieth', 'Justin Thomas', 'Keegan Bradley', 'Collin Morikawa', 'Xander Schauffele', 'Rory McIlroy']
 Michael_Players = ['Rory McIlroy', 'Scottie Scheffler', 'Xander Schauffele', 'Bryson DeChambeau', 'Brooks Koepka', 'Shane Lowry', 'Tommy Fleetwood', 'Collin Morikawa', 'Jordan Spieth', 'Justin Thomas']
-Groups = [('Zach',Zach_Players), ('Chris',Chris_Players), ('Bob', Bob_Players), ('Matthew', Matthew_Players), ('Michael', Michael_Players)]
+groups = [('Zach',Zach_Players), ('Chris',Chris_Players), ('Bob', Bob_Players), ('Matthew', Matthew_Players), ('Michael', Michael_Players)]
 leaderboard = []
-for group in Groups:
+
+for group in groups:
     score = group[0] + "'s Total Score:  \n"
     totalscore = 0
     for row in rows:
-        if len(row) > 2:
-            if row[3] in group[1]:
-                if row[4] == 'E':
-                    pass
-                else:
-                    totalscore += int(row[4])
-
+        if len(row) > 2 and row[3] in group[1] and row[4] != 'E':
+            totalscore += int(row[4])
     leaderboard.append([group[0], totalscore])     
     
 scaled_leaderboard =[]
-
 for x in range (-30, 50):
     for leader in leaderboard:
         if leader[1] == x:
@@ -52,22 +47,21 @@ for x in range (-30, 50):
 leaderboard_print = ''
 for i in (1,2,3,4,5):
     index = i-1
-    leaderboard_print += ('#' + str(i) + ' is ' + scaled_leaderboard[index][0] + ' with a total score of: ' + str(scaled_leaderboard[index][1]) + '  \n')
+    leaderboard_print += ('#' + str(i) + ': ' + scaled_leaderboard[index][0] + ' with a score of: ' + str(scaled_leaderboard[index][1]) + '  \n')
 
 st.title('Pool Leaderboard:')
 st.write(leaderboard_print)
 
-for group in Groups:
+for group in groups:
     score = group[0] + "'s Total Score:  \n"
     totalscore = 0
     for row in rows:
-        if len(row) > 2:
-            if row[3] in group[1]:
-                if row[4] == 'E':
-                    score += str(row[3] + ' score is: Even' + '  \n')
-                else:
-                    totalscore += int(row[4])
-                    score += str(row[3] + ' : ' + row[4] +'  \n')
+        if len(row) > 2 and row[3] in group[1]:
+            if row[4] == 'E':
+                score += str(row[3] + ' score is: Even' + '  \n')
+            else:
+                totalscore += int(row[4])
+                score += str(row[3] + ' : ' + row[4] +'  \n')
     score += 'Total Score = ' + str(totalscore) + '  \n  \n  \n'   
     leaderboard.append([group[0], totalscore])     
     st.write (score)
