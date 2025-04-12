@@ -50,7 +50,7 @@ scaled_leaderboard = sorted(leaderboard, key=lambda x: x[2])
 
 leaderboard_print = ''
 for i in range(len(scaled_leaderboard)):
-    leaderboard_print += f"#{i+1}: {scaled_leaderboard[i][0]} with a score of: {scaled_leaderboard[i][2]}\n"
+    leaderboard_print += f"#{i+1}: {scaled_leaderboard[i][0]} with a score of: {scaled_leaderboard[i][2]}  \n"
 
 st.title('Pool Leaderboard:')
 st.write(leaderboard_print)
@@ -65,7 +65,7 @@ for row in rows:
 for group in scaled_leaderboard:
     name = group[0]
     players = group[1]
-    output = f"{name}'s Individual Scores:\n"
+    output = f"{name}'s Individual Scores:  \n"
     totalscore = 0
     for row in rows:
         if len(row) > 6 and row[3] in players:
@@ -75,7 +75,7 @@ for group in scaled_leaderboard:
             score_val = safe_parse_score(score_str)
 
             if score_str == 'E':
-                output += f"{player}: Even thru {thru}\n"
+                output += f"{player}: Even thru {thru}  \n"
             elif score_str == 'CUT':
                 r1 = safe_parse_score(row[7]) if len(row) > 7 else None
                 r2 = safe_parse_score(row[8]) if len(row) > 8 else None
@@ -85,10 +85,10 @@ for group in scaled_leaderboard:
                     output += f"{player}: CUT (+{playerscore}) + worst score ({worstscore}) = {player_worse}\n"
                     totalscore += player_worse
                 else:
-                    output += f"{player}: CUT (score unavailable)\n"
+                    output += f"{player}: CUT (score unavailable)  \n"
             elif score_val is not None:
-                output += f"{player}: {score_val} thru {thru}\n"
+                output += f"{player}: {score_val} thru {thru}  \n"
                 totalscore += score_val
 
-    output += f"Total Score = {totalscore}\n\n"
+    output += f"Total Score = {totalscore}  \n  \n"
     st.write(output)
