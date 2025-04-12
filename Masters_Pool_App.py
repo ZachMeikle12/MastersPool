@@ -82,7 +82,7 @@ for group in scaled_leaderboard:
                 if r1 is not None and r2 is not None:
                     playerscore = r1 + r2 - 144
                     player_worse = playerscore + worstscore
-                    output += f"{player}: CUT (+{playerscore}) + worst score ({worstscore}) = {player_worse}\n"
+                    output += f"{player}: CUT (+{playerscore}) + worst score ({worstscore}) = {player_worse}  \n"
                     totalscore += player_worse
                 else:
                     output += f"{player}: CUT (score unavailable)  \n"
