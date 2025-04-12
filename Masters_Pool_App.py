@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
- 
+
 url = 'https://www.espn.com/golf/leaderboard/_/tournament/401529410' 
 
 headers = {
@@ -59,8 +59,8 @@ for group in scaled_leaderboard:
     score = group[0] + "'s Total Score:  \n"
     totalscore = 0
     for row in rows:
-        if len(row) > 2 and row[4] in group[1]:
-            if row[5] != 'E' and row[5] > totalscore:
+        if len(row) > 2 and row[3] in group[1]:
+            if row[4] != 'E' and row [4] != 'CUT' and row[5] > worstscore:
                 totalscore = row[5]
             elif row[4] == 'E':
                 score += str(row[3] + ': Even' + ' thru' + row[6] + '  \n')
