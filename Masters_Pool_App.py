@@ -60,7 +60,7 @@ for group in scaled_leaderboard:
     totalscore = 0
     for row in rows:
         if len(row) > 2 and row[3] in group[1]:
-            if row[4] != 'E' and row [4] != 'CUT' and row[5] != 'E' and row[5] > worstscore:
+            if row[4] != 'E' and row [4] != 'CUT' and row[5] != 'E' and int(row[5]) > worstscore:
                 totalscore = row[5]
             elif row[4] == 'E':
                 score += str(row[3] + ': Even' + ' thru' + row[6] + '  \n')
