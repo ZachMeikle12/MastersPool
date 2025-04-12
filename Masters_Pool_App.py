@@ -34,6 +34,13 @@ Matthew_Players = ['Bryson DeChambeau','Tony Finau','Tom Kim', 'Scottie Scheffle
 Michael_Players = ['Rory McIlroy', 'Scottie Scheffler', 'Xander Schauffele', 'Bryson DeChambeau', 'Brooks Koepka', 'Shane Lowry', 'Tommy Fleetwood', 'Collin Morikawa', 'Jordan Spieth', 'Justin Thomas']
 groups = [('Zach', Zach_Players), ('Chris', Chris_Players), ('Bob', Bob_Players), ('Matthew', Matthew_Players), ('Michael', Michael_Players)]
 
+worstscore = 0
+for row in rows:
+    if len(row) > 5:
+        r1 = safe_parse_score(row[5])
+        if row[4] not in ['E', 'CUT'] and r1 is not None:
+            worstscore = max(worstscore, r1)
+
 leaderboard = []
 for group in groups:
     name = group[0]
@@ -41,10 +48,19 @@ for group in groups:
     totalscore = 0
     for row in rows:
         if len(row) > 4 and row[3] in players:
-            score = safe_parse_score(row[4])
-            if score is not None:
-                totalscore += score
+            score_str = row[4]
+            score_val = safe_parse_score(score_str)
+
+            if score_str == 'CUT':
+                r1 = safe_parse_score(row[7]) if len(row) > 7 else None
+                r2 = safe_parse_score(row[8]) if len(row) > 8 else None
+                if r1 is not None and r2 is not None:
+                    playerscore = r1 + r2 - 144
+                    totalscore += playerscore + worstscore
+            elif score_val is not None:
+                totalscore += score_val
     leaderboard.append([name, players, totalscore])
+
 
 scaled_leaderboard = sorted(leaderboard, key=lambda x: x[2])
 
