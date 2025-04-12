@@ -34,8 +34,9 @@ for group in groups:
     score = group[0] + "'s Total Score:  \n"
     totalscore = 0
     for row in rows:
-        if len(row) > 2 and row[3] in group[1] and row[4] != 'E' and row[4] != 'CUT':
-            totalscore += int(row[4])
+        if len(row) > 2 and row[3] in group[1]:
+            if row[4] != 'E' and row[4] != 'CUT':
+                totalscore += int(row[4])
     leaderboard.append([group[0], group[1], totalscore])     
     
 scaled_leaderboard =[]
