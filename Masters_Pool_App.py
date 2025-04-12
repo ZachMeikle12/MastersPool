@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 
-def safe_parse_score(s):
+def scorecheck(s):
     try:
         s = s.replace('−', '-').replace('+', '')  
         return int(s)
@@ -37,7 +37,7 @@ groups = [('Zach', Zach_Players), ('Chris', Chris_Players), ('Bob', Bob_Players)
 worstscore = 0
 for row in rows:
     if len(row) > 5:
-        r1 = safe_parse_score(row[5])
+        r1 = scorecheck(row[5])
         if row[4] not in ['E', 'CUT'] and r1 is not None:
             worstscore = max(worstscore, r1)
 
@@ -49,11 +49,11 @@ for group in groups:
     for row in rows:
         if len(row) > 4 and row[3] in players:
             score_str = row[4]
-            score_val = safe_parse_score(score_str)
+            score_val = scorecheck(score_str)
 
             if score_str == 'CUT':
-                r1 = safe_parse_score(row[7]) if len(row) > 7 else None
-                r2 = safe_parse_score(row[8]) if len(row) > 8 else None
+                r1 = scorecheck(row[7]) if len(row) > 7 else None
+                r2 = scorecheck(row[8]) if len(row) > 8 else None
                 if r1 is not None and r2 is not None:
                     playerscore = r1 + r2 - 144
                     totalscore += playerscore + worstscore
@@ -74,7 +74,7 @@ st.write(leaderboard_print)
 worstscore = 0
 for row in rows:
     if len(row) > 5:
-        r1 = safe_parse_score(row[5])
+        r1 = scorecheck(row[5])
         if row[4] not in ['E', 'CUT'] and r1 is not None:
             worstscore = max(worstscore, r1)
 
@@ -88,13 +88,13 @@ for group in scaled_leaderboard:
             player = row[3]
             score_str = row[4]
             thru = row[6] if len(row) > 6 else ''
-            score_val = safe_parse_score(score_str)
+            score_val = scorecheck(score_str)
 
             if score_str == 'E':
                 output += f"{player}: Even thru {thru}  \n"
             elif score_str == 'CUT':
-                r1 = safe_parse_score(row[7]) if len(row) > 7 else None
-                r2 = safe_parse_score(row[8]) if len(row) > 8 else None
+                r1 = scorecheck(row[7]) if len(row) > 7 else None
+                r2 = scorecheck(row[8]) if len(row) > 8 else None
                 if r1 is not None and r2 is not None:
                     playerscore = r1 + r2 - 144
                     player_worse = playerscore + worstscore
