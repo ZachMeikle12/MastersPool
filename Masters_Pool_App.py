@@ -29,7 +29,7 @@ if table:
 
 # Define your groups (example players, adjust as needed)
 groups = {
-    'Zach': ['Scottie Scheffler', 'Shane Lowry', Tommy Fleetwood', 'Joaquín Niemann', 'Tyrell Hatton', 'Jon Rahm', 'Russell Henley', 'Cameron Young', 'Xander Schauffele', 'Viktor Hovland'],
+    'Zach': ['Scottie Scheffler', 'Shane Lowry', 'Tommy Fleetwood', 'Joaquín Niemann', 'Tyrell Hatton', 'Jon Rahm', 'Russell Henley', 'Cameron Young', 'Xander Schauffele', 'Viktor Hovland'],
     'Chris': ['Rory McIlroy', 'Padraig Harrington', 'Justin Thomas', 'Justin Rose', 'Sepp Straka', 'Scottie Scheffler', 'Jon Rahm', 'Matt Fitzpatrick', 'Chris Gotterup', 'Adam Scott'],
     'Bob': ['Rory McIlroy', 'Bryson Dechambeau', 'Shane Lowry', 'Justin Rose', 'Viktor Hovland', 'Scottie Scheffler', 'Jon Rahm', 'Tommy Fleetwood', 'Ludvig Åberg', 'Robert McIntyre'],
     'Bob2': ['Mackenzie Hughes', 'Collin Morikawa', 'Matt Fitzpatrick', 'Brooks Koepka', 'Rory McIlroy', 'Rickie Fowler', 'Scottie Scheffler', 'J.J. Spaun', 'Tony Finau', 'Tom Kim'],
