@@ -194,7 +194,7 @@ groups = {
         "Nicolai Højgaard",
         "Hideki Matsuyama",
         "Matt Fitzpatrick",
-        "Hideki Matsuyama",
+        "Jon Rahm",
         "Patrick Reed",
         "Ludvig Åberg",
     ],
@@ -257,6 +257,18 @@ groups = {
         "Min Woo Lee",
         "Hideki Matsuyama",
         "Justin Rose",
+    ],
+    "Parker": [
+        "Bryson DeChambeau",
+        "Scottie Scheffler",
+        "Ludvig Åberg",
+        "Rory McIlroy",
+        "Jon Rahm",
+        "Tommy Fleetwood",
+        "Akshay Bhatia",
+        "Justin Rose",
+        "Cameron Young",
+        "Hideki Matsuyama",
     ],
 }
 
