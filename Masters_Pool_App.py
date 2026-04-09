@@ -133,7 +133,7 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-bottom: 1.2rem;
 }
 
-/* RENDERED CARDS USING STREAMLIT CONTAINERS */
+/* CARD SHELLS */
 .card-shell {
     background: linear-gradient(145deg, #243d2e 0%, #1a3028 100%);
     border: 1px solid rgba(201,168,76,0.28);
@@ -157,11 +157,13 @@ html, body, [data-testid="stAppViewContainer"] {
 
 /* STREAMLIT OVERRIDES */
 h1,h2,h3,h4,h5,h6 { color: var(--gold) !important; }
-.stMarkdown p, .stMarkdown div { color: var(--cream); font-family: 'EB Garamond', Georgia, serif !important; }
+.stMarkdown p, .stMarkdown div {
+    color: var(--cream);
+    font-family: 'EB Garamond', Georgia, serif !important;
+}
 footer { visibility: hidden; }
 #MainMenu { visibility: hidden; }
 
-/* optional mild polish */
 div[data-testid="stHorizontalBlock"] > div {
     padding-top: 0.1rem;
 }
@@ -322,6 +324,42 @@ def parse_score_token(tokens):
             return i, t
     return None, "--"
 
+def format_position_labels(sorted_entries):
+    """
+    Returns a dict of owner -> rank label, e.g.
+    T1, T1, 3, 4
+    """
+    labels = {}
+    prev_score = None
+    prev_rank = None
+
+    for idx, (owner, info) in enumerate(sorted_entries, start=1):
+        score = info["total"]
+
+        if score == prev_score:
+            labels[owner] = f"T{prev_rank}"
+        else:
+            # Look ahead to see if this score is tied
+            count_same = sum(1 for _, inf in sorted_entries if inf["total"] == score)
+            if count_same > 1:
+                labels[owner] = f"T{idx}"
+            else:
+                labels[owner] = str(idx)
+
+            prev_score = score
+            prev_rank = idx
+
+    return labels
+
+def score_color(kind):
+    if kind == "under":
+        return "#6dbf8a"
+    if kind == "over":
+        return "#e07070"
+    if kind == "cut":
+        return "#c07070"
+    return "#f5f0e8"
+
 # ─────────────────────────────────────────────
 #  FETCH ESPN LEADERBOARD
 # ─────────────────────────────────────────────
@@ -375,15 +413,21 @@ def fetch_leaderboard():
         thru = "–"
         r1 = None
         r2 = None
+        r3 = None
+        r4 = None
 
         if idx is not None:
             if idx + 2 < len(tokens):
                 thru = tokens[idx + 2]
 
             numeric_tokens = [t for t in tokens if t.isdigit()]
-            if len(numeric_tokens) >= 2:
-                r1 = numeric_tokens[-2]
-                r2 = numeric_tokens[-1]
+
+            if len(numeric_tokens) >= 4:
+                r1, r2, r3, r4 = numeric_tokens[-4], numeric_tokens[-3], numeric_tokens[-2], numeric_tokens[-1]
+            elif len(numeric_tokens) == 3:
+                r1, r2, r3 = numeric_tokens[-3], numeric_tokens[-2], numeric_tokens[-1]
+            elif len(numeric_tokens) == 2:
+                r1, r2 = numeric_tokens[-2], numeric_tokens[-1]
             elif len(numeric_tokens) == 1:
                 r1 = numeric_tokens[-1]
 
@@ -393,6 +437,8 @@ def fetch_leaderboard():
             "thru": thru,
             "r1": r1,
             "r2": r2,
+            "r3": r3,
+            "r4": r4,
         })
         seen.add(key)
 
@@ -406,18 +452,12 @@ def fetch_leaderboard():
 # ─────────────────────────────────────────────
 def compute(rows):
     leaderboard_lookup = {}
-    worst_overall = 0
     saturday_worst = 0
     sunday_worst = 0
 
     for row in rows:
         leaderboard_lookup[normalize(row["name"])] = row
 
-        val = scorecheck(row.get("score"))
-        if val is not None:
-            worst_overall = max(worst_overall, val)
-
-        # Saturday = round 3, Sunday = round 4
         try:
             r3 = int(row["r3"]) if row.get("r3") not in (None, "") else None
         except Exception:
@@ -528,29 +568,18 @@ def compute(rows):
         }
 
     return results, saturday_worst, sunday_worst
+
 # ─────────────────────────────────────────────
 #  RENDER HELPERS
 # ─────────────────────────────────────────────
-def score_color(kind):
-    if kind == "under":
-        return "#6dbf8a"
-    if kind == "over":
-        return "#e07070"
-    if kind == "cut":
-        return "#c07070"
-    return "#f5f0e8"
-
-def render_standings_card(rank, owner, total):
+def render_standings_card(rank_label, owner, total, is_first=False):
     score_text, kind = fmt_score(total)
-    suffix_map = {1: "st", 2: "nd", 3: "rd"}
-    suffix = suffix_map.get(rank, "th")
-
-    card_class = "card-shell first-shell" if rank == 1 else "card-shell"
+    card_class = "card-shell first-shell" if is_first else "card-shell"
 
     with st.container(border=False):
         st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
 
-        top_left, top_mid, top_right = st.columns([1.1, 2.3, 0.8])
+        top_left, top_mid, top_right = st.columns([1.2, 2.2, 0.8])
 
         with top_left:
             st.markdown(
@@ -558,12 +587,12 @@ def render_standings_card(rank, owner, total):
                 <div style="
                     text-align:center;
                     font-family:'Playfair Display',serif;
-                    color:rgba(201,168,76,0.8);
-                    padding-top:0.45rem;
-                    font-size:0.95rem;
+                    color:rgba(201,168,76,0.85);
+                    padding-top:0.55rem;
                 ">
-                    <div style="font-size:1.9rem;font-weight:700;color:#c9a84c;line-height:1;">{rank}</div>
-                    <div style="font-size:0.8rem;letter-spacing:0.08em;">{suffix}</div>
+                    <div style="font-size:1.5rem;font-weight:700;color:#c9a84c;line-height:1.05;">
+                        {rank_label}
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -577,7 +606,7 @@ def render_standings_card(rank, owner, total):
                     color:#f5f0e8;
                     font-size:1.45rem;
                     font-weight:600;
-                    padding-top:0.8rem;
+                    padding-top:0.65rem;
                 ">
                     {owner}
                 </div>
@@ -586,12 +615,12 @@ def render_standings_card(rank, owner, total):
             )
 
         with top_right:
-            badge = "🏅" if rank == 1 else ""
+            badge = "🏅" if is_first else ""
             st.markdown(
                 f"""
                 <div style="
                     text-align:right;
-                    padding-top:0.8rem;
+                    padding-top:0.7rem;
                     padding-right:0.4rem;
                     font-size:1rem;
                 ">
@@ -609,7 +638,7 @@ def render_standings_card(rank, owner, total):
                 font-size:1.8rem;
                 font-weight:700;
                 color:{score_color(kind)};
-                padding:0.1rem 0 1rem 0;
+                padding:0.15rem 0 1rem 0;
             ">
                 {score_text}
             </div>
@@ -619,7 +648,7 @@ def render_standings_card(rank, owner, total):
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-def render_breakdown_card(rank, owner, info):
+def render_breakdown_card(rank_label, owner, info):
     total = info["total"]
     total_text, total_kind = fmt_score(total)
 
@@ -637,7 +666,7 @@ def render_breakdown_card(rank, owner, info):
                 padding:0.9rem 1rem 0.7rem 1rem;
                 margin-bottom:0.1rem;
             ">
-                #{rank} · {owner}
+                {rank_label} · {owner}
             </div>
             """,
             unsafe_allow_html=True
@@ -730,7 +759,7 @@ st.markdown("""
 with st.spinner("Fetching live scores from Augusta..."):
     try:
         raw_rows = fetch_leaderboard()
-        data, worst_score = compute(raw_rows)
+        data, saturday_worst, sunday_worst = compute(raw_rows)
         load_ok = True
     except Exception as e:
         load_ok = False
@@ -741,6 +770,7 @@ if not load_ok:
     st.stop()
 
 sorted_entries = sorted(data.items(), key=lambda x: x[1]["total"])
+rank_labels = format_position_labels(sorted_entries)
 
 # ─────────────────────────────────────────────
 #  STANDINGS OVERVIEW
@@ -751,18 +781,23 @@ st.markdown(
 )
 
 stand_cols = st.columns(len(sorted_entries))
+top_score = sorted_entries[0][1]["total"] if sorted_entries else None
+
 for i, (owner, info) in enumerate(sorted_entries):
     with stand_cols[i]:
-        render_standings_card(i + 1, owner, info["total"])
+        is_first = info["total"] == top_score
+        render_standings_card(rank_labels[owner], owner, info["total"], is_first=is_first)
 
 # ─────────────────────────────────────────────
 #  INFO BOX
 # ─────────────────────────────────────────────
-ws_disp = f"+{worst_score}" if worst_score > 0 else ("E" if worst_score == 0 else str(worst_score))
+sat_disp = f"+{saturday_worst}" if saturday_worst > 0 else ("E" if saturday_worst == 0 else str(saturday_worst))
+sun_disp = f"+{sunday_worst}" if sunday_worst > 0 else ("E" if sunday_worst == 0 else str(sunday_worst))
+
 st.markdown(f"""
 <div class="info-box">
     ⛳ <strong>Scoring:</strong> Pool score = sum of each player's score to par.
-    If a player misses the cut, their cut score plus the field's worst current score ({ws_disp}) is applied.
+    If a player misses the cut, their cut score plus the field's worst Saturday score ({sat_disp}) and worst Sunday score ({sun_disp}) is applied.
     Scores refresh every 2 minutes.
 </div>
 """, unsafe_allow_html=True)
@@ -778,7 +813,7 @@ st.markdown(
 break_cols = st.columns(2)
 for i, (owner, info) in enumerate(sorted_entries):
     with break_cols[i % 2]:
-        render_breakdown_card(i + 1, owner, info)
+        render_breakdown_card(rank_labels[owner], owner, info)
         st.write("")
 
 # ─────────────────────────────────────────────
