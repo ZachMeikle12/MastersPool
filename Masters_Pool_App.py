@@ -822,6 +822,6 @@ for i, (owner, info) in enumerate(sorted_entries):
 st.markdown("""
 <div style="text-align:center;padding:2rem 0 1rem;opacity:0.4;font-family:'Cormorant Garamond',serif;
 letter-spacing:0.15em;font-size:0.85rem;text-transform:uppercase;color:#c9a84c;">
-    A tradition unlike any other &nbsp;·&nbsp; Data via ESPN
+    A tradition unlike any other &nbsp;·&nbsp;
 </div>
 """, unsafe_allow_html=True)
