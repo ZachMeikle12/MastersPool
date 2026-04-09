@@ -310,7 +310,7 @@ def fmt_score(val):
 # ─────────────────────────────────────────────
 @st.cache_data(ttl=120, show_spinner=False)
 def fetch_leaderboard():
-    url = "https://www.espn.com/golf/leaderboard/_/tournamentId/401811998"
+    url = "www.espn.com/golf/leaderboard?season=2025&tournamentId=401811941"
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0)",
         "Accept-Language": "en-US,en;q=0.9",
@@ -410,7 +410,7 @@ def compute(rows):
 st.markdown("""
 <div class="masters-header">
     <div class="azalea-row">✦ ✦ ✦</div>
-    <p class="masters-year">Augusta National · 2025</p>
+    <p class="masters-year">Augusta National · 2026</p>
     <h1 class="masters-title">The Masters</h1>
     <p class="masters-subtitle">Fantasy Pool Leaderboard</p>
     <div class="azalea-row">✦ ✦ ✦</div>
