@@ -405,15 +405,34 @@ def fetch_leaderboard():
 #  COMPUTE POOL SCORES
 # ─────────────────────────────────────────────
 def compute(rows):
-    worst = 0
-    for row in rows:
-        val = scorecheck(row.get("score"))
-        if val is not None:
-            worst = max(worst, val)
-
     leaderboard_lookup = {}
+    worst_overall = 0
+    saturday_worst = 0
+    sunday_worst = 0
+
     for row in rows:
         leaderboard_lookup[normalize(row["name"])] = row
+
+        val = scorecheck(row.get("score"))
+        if val is not None:
+            worst_overall = max(worst_overall, val)
+
+        # Saturday = round 3, Sunday = round 4
+        try:
+            r3 = int(row["r3"]) if row.get("r3") not in (None, "") else None
+        except Exception:
+            r3 = None
+
+        try:
+            r4 = int(row["r4"]) if row.get("r4") not in (None, "") else None
+        except Exception:
+            r4 = None
+
+        if r3 is not None:
+            saturday_worst = max(saturday_worst, r3 - 72)
+
+        if r4 is not None:
+            sunday_worst = max(sunday_worst, r4 - 72)
 
     results = {}
 
@@ -449,26 +468,30 @@ def compute(rows):
                     r1, r2 = None, None
 
                 if r1 is not None and r2 is not None:
-                    ps = (r1 + r2) - 144
-                    combined = ps + worst
+                    cut_score = (r1 + r2) - 144
+                    combined = cut_score + saturday_worst + sunday_worst
                     total += combined
 
-                    ws_str = f"+{worst}" if worst > 0 else ("E" if worst == 0 else str(worst))
-                    ps_str = f"+{ps}" if ps > 0 else ("E" if ps == 0 else str(ps))
+                    cut_str = f"+{cut_score}" if cut_score > 0 else ("E" if cut_score == 0 else str(cut_score))
+                    sat_str = f"+{saturday_worst}" if saturday_worst > 0 else ("E" if saturday_worst == 0 else str(saturday_worst))
+                    sun_str = f"+{sunday_worst}" if sunday_worst > 0 else ("E" if sunday_worst == 0 else str(sunday_worst))
 
                     player_details.append({
                         "name": player,
-                        "display": f"CUT ({ps_str}) + worst ({ws_str}) = {combined:+}",
+                        "display": f"CUT ({cut_str}) + Sat ({sat_str}) + Sun ({sun_str}) = {combined:+}",
                         "kind": "cut",
                         "value": combined,
                     })
                 else:
-                    combined = worst
+                    combined = saturday_worst + sunday_worst
                     total += combined
-                    ws_str = f"+{worst}" if worst > 0 else ("E" if worst == 0 else str(worst))
+
+                    sat_str = f"+{saturday_worst}" if saturday_worst > 0 else ("E" if saturday_worst == 0 else str(saturday_worst))
+                    sun_str = f"+{sunday_worst}" if sunday_worst > 0 else ("E" if sunday_worst == 0 else str(sunday_worst))
+
                     player_details.append({
                         "name": player,
-                        "display": f"CUT — using worst ({ws_str})",
+                        "display": f"CUT — using Sat ({sat_str}) + Sun ({sun_str}) = {combined:+}",
                         "kind": "cut",
                         "value": combined,
                     })
@@ -504,8 +527,7 @@ def compute(rows):
             "total": total,
         }
 
-    return results, worst
-
+    return results, saturday_worst, sunday_worst
 # ─────────────────────────────────────────────
 #  RENDER HELPERS
 # ─────────────────────────────────────────────
