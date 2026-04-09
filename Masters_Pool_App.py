@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-from bs4 import BeautifulSoup
 
 # ─────────────────────────────────────────────
 #  PAGE CONFIG  (must be first Streamlit call)
@@ -193,7 +192,6 @@ footer { visibility: hidden; }
 # ─────────────────────────────────────────────
 #  ✏️  EDIT YOUR POOL PARTICIPANTS HERE
 #  Each person gets 10 player names.
-#  Names must match ESPN leaderboard spelling.
 # ─────────────────────────────────────────────
 groups = {
     "Zach": [
@@ -216,7 +214,7 @@ groups = {
         "Nicolai Højgaard",
         "Hideki Matsuyama",
         "Matt Fitzpatrick",
-        "Hideki Matsuyama",
+        "Jon Rahm",
         "Patrick Reed",
         "Ludvig Åberg",
     ],
@@ -286,10 +284,14 @@ groups = {
 #  HELPERS
 # ─────────────────────────────────────────────
 def scorecheck(s):
+    if s is None:
+        return None
     try:
-        s = s.strip().replace('−', '-').replace('–', '-').replace('+', '')
+        s = str(s).strip().replace('−', '-').replace('–', '-').replace('+', '')
         if s in ('E', 'Even', ''):
             return 0
+        if s in ('CUT', '--', 'WD', 'DQ'):
+            return None
         return int(s)
     except Exception:
         return None
@@ -303,99 +305,214 @@ def fmt_score(val):
         return f"+{val}", "over"
     return str(val), "under"
 
+def normalize(name):
+    if name is None:
+        return ""
+    replacements = {
+        "å": "a",
+        "Å": "a",
+        "ö": "o",
+        "Ö": "o",
+        "é": "e",
+        "É": "e",
+        "ø": "o",
+        "Ø": "o",
+        "ü": "u",
+        "Ü": "u",
+        "á": "a",
+        "Á": "a",
+        "í": "i",
+        "Í": "i",
+        "ó": "o",
+        "Ó": "o",
+        "ú": "u",
+        "Ú": "u",
+    }
+    out = str(name).strip().lower()
+    for old, new in replacements.items():
+        out = out.replace(old, new)
+    return " ".join(out.split())
+
+def dedupe_keep_order(items):
+    seen = set()
+    out = []
+    for item in items:
+        key = normalize(item)
+        if key not in seen:
+            seen.add(key)
+            out.append(item)
+    return out
+
 # ─────────────────────────────────────────────
-#  FETCH ESPN LEADERBOARD
-#  Update the tournament ID below each year!
-#  Find it in the ESPN leaderboard URL.
+#  FETCH ESPN LEADERBOARD (JSON API)
 # ─────────────────────────────────────────────
 @st.cache_data(ttl=120, show_spinner=False)
 def fetch_leaderboard():
-    url = "https://www.espn.com/golf/leaderboard?season=2025&tournamentId=401811941"
+    url = "https://site.web.api.espn.com/apis/v2/sports/golf/pga/leaderboard?event=401811941"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0)",
+        "User-Agent": "Mozilla/5.0",
         "Accept-Language": "en-US,en;q=0.9",
     }
+
     resp = requests.get(url, headers=headers, timeout=15)
     resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
-    table = soup.find("table")
+    payload = resp.json()
+
+    competitors = payload["events"][0]["competitions"][0]["competitors"]
     rows = []
-    if table:
-        for tr in table.find_all("tr")[1:]:
-            cells = [td.get_text(strip=True) for td in tr.find_all("td")]
-            if cells:
-                rows.append(cells)
+
+    for athlete in competitors:
+        name = athlete.get("athlete", {}).get("displayName", "").strip()
+
+        raw_score = athlete.get("score")
+        if raw_score is None or raw_score == "":
+            raw_score = athlete.get("toPar")
+        if raw_score is None or raw_score == "":
+            raw_score = "E"
+        raw_score = str(raw_score).strip()
+
+        status_block = athlete.get("status", {})
+        thru = (
+            status_block.get("type", {}).get("shortDetail")
+            or status_block.get("displayValue")
+            or ""
+        )
+
+        linescores = athlete.get("linescores", [])
+        round_values = []
+        for ls in linescores:
+            val = ls.get("value")
+            if val is None or val == "":
+                val = ls.get("displayValue", "")
+            round_values.append(val)
+
+        r1 = round_values[0] if len(round_values) > 0 else None
+        r2 = round_values[1] if len(round_values) > 1 else None
+
+        # Detect made/missed cut more safely
+        status_name = (
+            status_block.get("type", {}).get("name", "")
+            or status_block.get("type", {}).get("state", "")
+            or ""
+        ).upper()
+        thru_upper = str(thru).upper()
+        score_upper = raw_score.upper()
+
+        is_cut = (
+            score_upper == "CUT"
+            or "CUT" in thru_upper
+            or status_name == "CUT"
+        )
+
+        score_for_pool = "CUT" if is_cut else raw_score
+
+        rows.append({
+            "name": name,
+            "score": score_for_pool,
+            "thru": thru if thru else "–",
+            "r1": r1,
+            "r2": r2,
+        })
+
     return rows
 
 # ─────────────────────────────────────────────
 #  COMPUTE POOL SCORES
 # ─────────────────────────────────────────────
 def compute(rows):
-    # Worst single-round score among active players (used for missed-cut penalty)
+    # Worst score to par among players with valid current scores
     worst = 0
     for row in rows:
-        if len(row) > 5:
-            r = scorecheck(row[5])
-            if row[4] not in ["E", "CUT"] and r is not None:
-                worst = max(worst, r)
+        val = scorecheck(row.get("score"))
+        if val is not None:
+            worst = max(worst, val)
+
+    # Build normalized lookup once
+    leaderboard_lookup = {}
+    for row in rows:
+        leaderboard_lookup[normalize(row["name"])] = row
 
     results = {}
+
     for owner, players in groups.items():
+        unique_players = dedupe_keep_order(players)
+
         player_details = []
         total = 0
-        for player in players:
-            found = False
-            for row in rows:
-                if len(row) > 6 and row[3].strip() == player:
-                    found = True
-                    scr  = row[4].strip()
-                    thru = row[6].strip() if len(row) > 6 else "–"
-                    val  = scorecheck(scr)
 
-                    if scr == "CUT":
-                        r1 = scorecheck(row[7]) if len(row) > 7 else None
-                        r2 = scorecheck(row[8]) if len(row) > 8 else None
-                        if r1 is not None and r2 is not None:
-                            ps = r1 + r2 - 144
-                            combined = ps + worst
-                            total += combined
-                            ws_str = f"+{worst}" if worst >= 0 else str(worst)
-                            ps_str = f"+{ps}" if ps >= 0 else str(ps)
-                            player_details.append({
-                                "name": player,
-                                "display": f"CUT ({ps_str}) + worst ({ws_str}) = {combined:+}",
-                                "kind": "cut",
-                                "value": combined,
-                            })
-                        else:
-                            player_details.append({
-                                "name": player,
-                                "display": "CUT — score unavailable",
-                                "kind": "cut",
-                                "value": None,
-                            })
-                    elif val == 0:
-                        player_details.append({
-                            "name": player,
-                            "display": f"E  —  thru {thru}",
-                            "kind": "even",
-                            "value": 0,
-                        })
-                    elif val is not None:
-                        total += val
-                        s, cls = fmt_score(val)
-                        player_details.append({
-                            "name": player,
-                            "display": f"{s}  —  thru {thru}",
-                            "kind": cls,
-                            "value": val,
-                        })
-                    break
+        for player in unique_players:
+            row = leaderboard_lookup.get(normalize(player))
 
-            if not found:
+            if row is None:
                 player_details.append({
                     "name": player,
-                    "display": "Not yet started",
+                    "display": "Not found on leaderboard",
+                    "kind": "even",
+                    "value": 0,
+                })
+                continue
+
+            scr = str(row.get("score", "")).strip()
+            thru = row.get("thru", "–")
+            val = scorecheck(scr)
+
+            if scr.upper() == "CUT":
+                r1_raw = row.get("r1")
+                r2_raw = row.get("r2")
+
+                try:
+                    r1 = int(r1_raw) if r1_raw not in (None, "") else None
+                    r2 = int(r2_raw) if r2_raw not in (None, "") else None
+                except Exception:
+                    r1, r2 = None, None
+
+                if r1 is not None and r2 is not None:
+                    ps = (r1 + r2) - 144
+                    combined = ps + worst
+                    total += combined
+
+                    ws_str = f"+{worst}" if worst > 0 else ("E" if worst == 0 else str(worst))
+                    ps_str = f"+{ps}" if ps > 0 else ("E" if ps == 0 else str(ps))
+
+                    player_details.append({
+                        "name": player,
+                        "display": f"CUT ({ps_str}) + worst ({ws_str}) = {combined:+}",
+                        "kind": "cut",
+                        "value": combined,
+                    })
+                else:
+                    combined = worst
+                    total += combined
+                    ws_str = f"+{worst}" if worst > 0 else ("E" if worst == 0 else str(worst))
+                    player_details.append({
+                        "name": player,
+                        "display": f"CUT — round scores unavailable, using worst ({ws_str})",
+                        "kind": "cut",
+                        "value": combined,
+                    })
+
+            elif val == 0:
+                player_details.append({
+                    "name": player,
+                    "display": f"E  —  thru {thru}",
+                    "kind": "even",
+                    "value": 0,
+                })
+
+            elif val is not None:
+                total += val
+                s, cls = fmt_score(val)
+                player_details.append({
+                    "name": player,
+                    "display": f"{s}  —  thru {thru}",
+                    "kind": cls,
+                    "value": val,
+                })
+
+            else:
+                player_details.append({
+                    "name": player,
+                    "display": f"{scr}  —  thru {thru}",
                     "kind": "even",
                     "value": 0,
                 })
@@ -462,11 +579,11 @@ st.markdown(cards_html, unsafe_allow_html=True)
 # ─────────────────────────────────────────────
 #  INFO BOX
 # ─────────────────────────────────────────────
-ws_disp = f"+{worst_score}" if worst_score >= 0 else str(worst_score)
+ws_disp = f"+{worst_score}" if worst_score > 0 else ("E" if worst_score == 0 else str(worst_score))
 st.markdown(f"""
 <div class="info-box">
     ⛳ <strong>Scoring:</strong> Pool score = sum of each player's score to par.
-    Players who miss the cut: their cut score + the field's worst round ({ws_disp}) is applied.
+    Players who miss the cut: their cut score + the field's worst score ({ws_disp}) is applied.
     Scores refresh every 2 minutes.
 </div>
 """, unsafe_allow_html=True)
