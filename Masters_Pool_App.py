@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from bs4 import BeautifulSoup
 
 # ─────────────────────────────────────────────
 #  PAGE CONFIG  (must be first Streamlit call)
@@ -348,74 +349,102 @@ def dedupe_keep_order(items):
 # ─────────────────────────────────────────────
 @st.cache_data(ttl=120, show_spinner=False)
 def fetch_leaderboard():
-    url = "https://site.web.api.espn.com/apis/v2/sports/golf/pga/leaderboard?event=401811941"
+    url = "https://www.espn.com/golf/leaderboard?season=2025&tournamentId=401811941"
     headers = {
         "User-Agent": "Mozilla/5.0",
         "Accept-Language": "en-US,en;q=0.9",
     }
 
-    resp = requests.get(url, headers=headers, timeout=15)
+    resp = requests.get(url, headers=headers, timeout=20)
     resp.raise_for_status()
-    payload = resp.json()
 
-    competitors = payload["events"][0]["competitions"][0]["competitors"]
+    # ESPN's golf leaderboard page currently contains the leaderboard text directly
+    text = resp.text
+
+    soup = BeautifulSoup(text, "html.parser")
+
     rows = []
+    seen = set()
 
-    for athlete in competitors:
-        name = athlete.get("athlete", {}).get("displayName", "").strip()
+    # The player links on the live leaderboard page are the most reliable anchors
+    player_links = soup.find_all("a", href=True)
 
-        raw_score = athlete.get("score")
-        if raw_score is None or raw_score == "":
-            raw_score = athlete.get("toPar")
-        if raw_score is None or raw_score == "":
-            raw_score = "E"
-        raw_score = str(raw_score).strip()
+    for a in player_links:
+        name = a.get_text(" ", strip=True)
+        href = a.get("href", "")
 
-        status_block = athlete.get("status", {})
-        thru = (
-            status_block.get("type", {}).get("shortDetail")
-            or status_block.get("displayValue")
-            or ""
-        )
+        # ESPN player links on this page contain golf/player/_/id/
+        if not name or "/golf/player/_/id/" not in href:
+            continue
 
-        linescores = athlete.get("linescores", [])
-        round_values = []
-        for ls in linescores:
-            val = ls.get("value")
-            if val is None or val == "":
-                val = ls.get("displayValue", "")
-            round_values.append(val)
+        # Grab nearby text from the containing row/item
+        container = a.parent
+        for _ in range(6):
+            if container is None:
+                break
+            block_text = container.get_text(" ", strip=True)
 
-        r1 = round_values[0] if len(round_values) > 0 else None
-        r2 = round_values[1] if len(round_values) > 1 else None
+            # We want the block that contains the player's name and nearby score/thru data
+            if name in block_text and len(block_text) > len(name) + 3:
+                break
+            container = container.parent
 
-        # Detect made/missed cut more safely
-        status_name = (
-            status_block.get("type", {}).get("name", "")
-            or status_block.get("type", {}).get("state", "")
-            or ""
-        ).upper()
-        thru_upper = str(thru).upper()
-        score_upper = raw_score.upper()
+        if container is None:
+            continue
 
-        is_cut = (
-            score_upper == "CUT"
-            or "CUT" in thru_upper
-            or status_name == "CUT"
-        )
+        block_text = container.get_text(" ", strip=True)
 
-        score_for_pool = "CUT" if is_cut else raw_score
+        key = normalize(name)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        # Defaults
+        score = "--"
+        thru = "–"
+        r1 = None
+        r2 = None
+
+        # Try to parse a score immediately after the player name
+        # Examples on page text include:
+        # Rory McIlroy E E 3 -------- 13
+        # Tommy Fleetwood -3 -3 5 -------- 17
+        after = block_text.split(name, 1)[1].strip() if name in block_text else ""
+
+        tokens = after.split()
+
+        # Find first score-like token
+        for i, tok in enumerate(tokens):
+            tok_clean = tok.strip()
+            if tok_clean in {"E", "CUT", "--"} or tok_clean.startswith("+") or tok_clean.startswith("-"):
+                score = tok_clean
+
+                # Usually next token is TODAY and next after that is THRU
+                if i + 2 < len(tokens):
+                    thru = tokens[i + 2]
+
+                # Try to find R1 / R2 near the end if available
+                numeric_tokens = [t for t in tokens if t.isdigit()]
+                if len(numeric_tokens) >= 2:
+                    r1 = numeric_tokens[-2]
+                    r2 = numeric_tokens[-1]
+                elif len(numeric_tokens) == 1:
+                    r1 = numeric_tokens[-1]
+
+                break
 
         rows.append({
             "name": name,
-            "score": score_for_pool,
-            "thru": thru if thru else "–",
+            "score": score,
+            "thru": thru,
             "r1": r1,
             "r2": r2,
         })
 
-    return rows
+    if not rows:
+        raise ValueError("No leaderboard rows were parsed from the ESPN page.")
 
+    return rows
 # ─────────────────────────────────────────────
 #  COMPUTE POOL SCORES
 # ─────────────────────────────────────────────
