@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # ─────────────────────────────────────────────
-#  PAGE CONFIG  (must be first Streamlit call)
+#  PAGE CONFIG
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="The Masters Fantasy Pool",
@@ -16,7 +16,7 @@ st.set_page_config(
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Cormorant+Garamond:wght@300;400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@300;400;600&family=EB+Garamond:wght@400;500&display=swap');
 
 :root {
     --green-deep:  #1a3a2a;
@@ -35,9 +35,14 @@ html, body, [data-testid="stAppViewContainer"] {
     color: var(--cream) !important;
     font-family: 'EB Garamond', Georgia, serif !important;
 }
+
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0f2318 0%, #1a3a2a 100%) !important;
     border-right: 2px solid var(--gold) !important;
+}
+
+[data-testid="stVerticalBlock"] {
+    gap: 0.6rem;
 }
 
 /* HEADER */
@@ -98,7 +103,7 @@ html, body, [data-testid="stAppViewContainer"] {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin: 2rem 0 1.2rem;
+    margin: 2rem 0 1rem;
 }
 .section-divider::before,
 .section-divider::after {
@@ -109,66 +114,12 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 .section-label {
     font-family: 'Playfair Display', Georgia, serif;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     color: var(--gold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     white-space: nowrap;
 }
-
-/* LEADERBOARD CARDS */
-.lb-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2.5rem;
-}
-.lb-card {
-    background: linear-gradient(145deg, #243d2e 0%, #1a3028 100%);
-    border: 1px solid rgba(201,168,76,0.3);
-    border-radius: 4px;
-    padding: 1.2rem 1rem;
-    text-align: center;
-    position: relative;
-    transition: transform 0.2s, border-color 0.2s;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-.lb-card:hover { transform: translateY(-3px); border-color: var(--gold); }
-.lb-card.first-place {
-    background: linear-gradient(145deg, #2e4a1e 0%, #1e3818 100%);
-    border: 2px solid var(--gold);
-    box-shadow: 0 4px 25px rgba(201,168,76,0.25);
-}
-.lb-rank { font-family: 'Playfair Display', serif; font-size: 0.8rem; color: rgba(201,168,76,0.6); letter-spacing: 0.2em; text-transform: uppercase; }
-.lb-rank-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--gold); line-height: 1; }
-.lb-rank-num.first { color: var(--gold-light); text-shadow: 0 0 15px rgba(201,168,76,0.5); }
-.lb-name { font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; font-weight: 600; color: var(--cream); margin: 0.3rem 0; letter-spacing: 0.05em; }
-.lb-score { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; }
-.lb-score.under { color: #6dbf8a; }
-.lb-score.over  { color: #e07070; }
-.lb-score.even  { color: var(--cream); }
-
-.jacket-ribbon { position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 42px 42px 0; border-color: transparent var(--gold) transparent transparent; }
-.jacket-ribbon span { position: absolute; top: 5px; right: -38px; font-size: 0.65rem; color: var(--green-deep); font-weight: 700; letter-spacing: 0.05em; transform: rotate(45deg); pointer-events: none; }
-
-/* PLAYER BREAKDOWN */
-.breakdown-section {
-    background: linear-gradient(145deg, #1e3528 0%, #182c20 100%);
-    border: 1px solid rgba(201,168,76,0.25);
-    border-radius: 4px;
-    padding: 1.4rem 1.6rem;
-    margin-bottom: 1.4rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
-}
-.breakdown-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; color: var(--gold); margin-bottom: 0.8rem; border-bottom: 1px solid rgba(201,168,76,0.25); padding-bottom: 0.5rem; letter-spacing: 0.06em; }
-.player-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'EB Garamond', Georgia, serif; font-size: 1.05rem; }
-.player-row:last-of-type { border-bottom: none; }
-.player-name { color: var(--cream); }
-.player-score.under { color: #6dbf8a; font-weight: 600; }
-.player-score.over  { color: #e07070; font-weight: 600; }
-.player-score.cut   { color: #c07070; font-style: italic; }
-.player-score.even  { color: var(--cream); }
-.breakdown-total { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: var(--gold-light); margin-top: 0.7rem; text-align: right; letter-spacing: 0.05em; }
 
 /* INFO BOX */
 .info-box {
@@ -177,22 +128,48 @@ html, body, [data-testid="stAppViewContainer"] {
     padding: 0.7rem 1rem;
     border-radius: 2px;
     font-family: 'EB Garamond', Georgia, serif;
-    font-size: 0.95rem;
-    color: rgba(245,240,232,0.75);
-    margin-bottom: 1.5rem;
+    font-size: 0.98rem;
+    color: rgba(245,240,232,0.82);
+    margin-bottom: 1.2rem;
+}
+
+/* RENDERED CARDS USING STREAMLIT CONTAINERS */
+.card-shell {
+    background: linear-gradient(145deg, #243d2e 0%, #1a3028 100%);
+    border: 1px solid rgba(201,168,76,0.28);
+    border-radius: 8px;
+    padding: 0.1rem 0.1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+
+.first-shell {
+    border: 2px solid var(--gold);
+    box-shadow: 0 4px 24px rgba(201,168,76,0.18);
+}
+
+.breakdown-shell {
+    background: linear-gradient(145deg, #1e3528 0%, #182c20 100%);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 8px;
+    padding: 0.1rem 0.1rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.22);
 }
 
 /* STREAMLIT OVERRIDES */
 h1,h2,h3,h4,h5,h6 { color: var(--gold) !important; }
-.stMarkdown p { color: var(--cream) !important; font-family: 'EB Garamond', Georgia, serif !important; }
+.stMarkdown p, .stMarkdown div { color: var(--cream); font-family: 'EB Garamond', Georgia, serif !important; }
 footer { visibility: hidden; }
 #MainMenu { visibility: hidden; }
+
+/* optional mild polish */
+div[data-testid="stHorizontalBlock"] > div {
+    padding-top: 0.1rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-#  ✏️  EDIT YOUR POOL PARTICIPANTS HERE
-#  Each person gets 10 player names.
+#  POOL PARTICIPANTS
 # ─────────────────────────────────────────────
 groups = {
     "Zach": [
@@ -215,7 +192,7 @@ groups = {
         "Nicolai Højgaard",
         "Hideki Matsuyama",
         "Matt Fitzpatrick",
-        "Jon Rahm",
+        "Hideki Matsuyama",
         "Patrick Reed",
         "Ludvig Åberg",
     ],
@@ -288,10 +265,10 @@ def scorecheck(s):
     if s is None:
         return None
     try:
-        s = str(s).strip().replace('−', '-').replace('–', '-').replace('+', '')
-        if s in ('E', 'Even', ''):
+        s = str(s).strip().replace("−", "-").replace("–", "-").replace("+", "")
+        if s in ("E", "Even", ""):
             return 0
-        if s in ('CUT', '--', 'WD', 'DQ'):
+        if s.upper() in ("CUT", "--", "WD", "DQ"):
             return None
         return int(s)
     except Exception:
@@ -310,24 +287,18 @@ def normalize(name):
     if name is None:
         return ""
     replacements = {
-        "å": "a",
-        "Å": "a",
-        "ö": "o",
-        "Ö": "o",
-        "é": "e",
-        "É": "e",
-        "ø": "o",
-        "Ø": "o",
-        "ü": "u",
-        "Ü": "u",
-        "á": "a",
-        "Á": "a",
-        "í": "i",
-        "Í": "i",
-        "ó": "o",
-        "Ó": "o",
-        "ú": "u",
-        "Ú": "u",
+        "å": "a", "Å": "a",
+        "ö": "o", "Ö": "o",
+        "é": "e", "É": "e",
+        "ø": "o", "Ø": "o",
+        "ü": "u", "Ü": "u",
+        "á": "a", "Á": "a",
+        "í": "i", "Í": "i",
+        "ó": "o", "Ó": "o",
+        "ú": "u", "Ú": "u",
+        "ë": "e", "Ë": "e",
+        "ï": "i", "Ï": "i",
+        "ñ": "n", "Ñ": "n",
     }
     out = str(name).strip().lower()
     for old, new in replacements.items():
@@ -344,8 +315,15 @@ def dedupe_keep_order(items):
             out.append(item)
     return out
 
+def parse_score_token(tokens):
+    for i, tok in enumerate(tokens):
+        t = tok.strip()
+        if t in {"E", "CUT", "--"} or t.startswith("+") or t.startswith("-"):
+            return i, t
+    return None, "--"
+
 # ─────────────────────────────────────────────
-#  FETCH ESPN LEADERBOARD (JSON API)
+#  FETCH ESPN LEADERBOARD
 # ─────────────────────────────────────────────
 @st.cache_data(ttl=120, show_spinner=False)
 def fetch_leaderboard():
@@ -358,80 +336,56 @@ def fetch_leaderboard():
     resp = requests.get(url, headers=headers, timeout=20)
     resp.raise_for_status()
 
-    # ESPN's golf leaderboard page currently contains the leaderboard text directly
-    text = resp.text
-
-    soup = BeautifulSoup(text, "html.parser")
+    soup = BeautifulSoup(resp.text, "html.parser")
 
     rows = []
     seen = set()
 
-    # The player links on the live leaderboard page are the most reliable anchors
     player_links = soup.find_all("a", href=True)
 
     for a in player_links:
         name = a.get_text(" ", strip=True)
         href = a.get("href", "")
 
-        # ESPN player links on this page contain golf/player/_/id/
         if not name or "/golf/player/_/id/" not in href:
             continue
 
-        # Grab nearby text from the containing row/item
-        container = a.parent
-        for _ in range(6):
+        key = normalize(name)
+        if key in seen:
+            continue
+
+        container = a
+        for _ in range(8):
+            container = container.parent
             if container is None:
                 break
             block_text = container.get_text(" ", strip=True)
-
-            # We want the block that contains the player's name and nearby score/thru data
-            if name in block_text and len(block_text) > len(name) + 3:
+            if name in block_text and len(block_text.split()) >= 4:
                 break
-            container = container.parent
 
         if container is None:
             continue
 
         block_text = container.get_text(" ", strip=True)
+        after = block_text.split(name, 1)[1].strip() if name in block_text else ""
+        tokens = after.split()
 
-        key = normalize(name)
-        if key in seen:
-            continue
-        seen.add(key)
+        idx, score = parse_score_token(tokens)
 
-        # Defaults
-        score = "--"
         thru = "–"
         r1 = None
         r2 = None
 
-        # Try to parse a score immediately after the player name
-        # Examples on page text include:
-        # Rory McIlroy E E 3 -------- 13
-        # Tommy Fleetwood -3 -3 5 -------- 17
-        after = block_text.split(name, 1)[1].strip() if name in block_text else ""
+        if idx is not None:
+            if idx + 2 < len(tokens):
+                thru = tokens[idx + 2]
 
-        tokens = after.split()
-
-        # Find first score-like token
-        for i, tok in enumerate(tokens):
-            tok_clean = tok.strip()
-            if tok_clean in {"E", "CUT", "--"} or tok_clean.startswith("+") or tok_clean.startswith("-"):
-                score = tok_clean
-
-                # Usually next token is TODAY and next after that is THRU
-                if i + 2 < len(tokens):
-                    thru = tokens[i + 2]
-
-                # Try to find R1 / R2 near the end if available
-                numeric_tokens = [t for t in tokens if t.isdigit()]
-                if len(numeric_tokens) >= 2:
-                    r1 = numeric_tokens[-2]
-                    r2 = numeric_tokens[-1]
-                elif len(numeric_tokens) == 1:
-                    r1 = numeric_tokens[-1]
-
-                break
+            numeric_tokens = [t for t in tokens if t.isdigit()]
+            if len(numeric_tokens) >= 2:
+                r1 = numeric_tokens[-2]
+                r2 = numeric_tokens[-1]
+            elif len(numeric_tokens) == 1:
+                r1 = numeric_tokens[-1]
 
         rows.append({
             "name": name,
@@ -440,23 +394,23 @@ def fetch_leaderboard():
             "r1": r1,
             "r2": r2,
         })
+        seen.add(key)
 
     if not rows:
         raise ValueError("No leaderboard rows were parsed from the ESPN page.")
 
     return rows
+
 # ─────────────────────────────────────────────
 #  COMPUTE POOL SCORES
 # ─────────────────────────────────────────────
 def compute(rows):
-    # Worst score to par among players with valid current scores
     worst = 0
     for row in rows:
         val = scorecheck(row.get("score"))
         if val is not None:
             worst = max(worst, val)
 
-    # Build normalized lookup once
     leaderboard_lookup = {}
     for row in rows:
         leaderboard_lookup[normalize(row["name"])] = row
@@ -465,7 +419,6 @@ def compute(rows):
 
     for owner, players in groups.items():
         unique_players = dedupe_keep_order(players)
-
         player_details = []
         total = 0
 
@@ -515,7 +468,7 @@ def compute(rows):
                     ws_str = f"+{worst}" if worst > 0 else ("E" if worst == 0 else str(worst))
                     player_details.append({
                         "name": player,
-                        "display": f"CUT — round scores unavailable, using worst ({ws_str})",
+                        "display": f"CUT — using worst ({ws_str})",
                         "kind": "cut",
                         "value": combined,
                     })
@@ -546,12 +499,198 @@ def compute(rows):
                     "value": 0,
                 })
 
-        results[owner] = {"players": player_details, "total": total}
+        results[owner] = {
+            "players": player_details,
+            "total": total,
+        }
 
     return results, worst
 
 # ─────────────────────────────────────────────
-#  RENDER HEADER
+#  RENDER HELPERS
+# ─────────────────────────────────────────────
+def score_color(kind):
+    if kind == "under":
+        return "#6dbf8a"
+    if kind == "over":
+        return "#e07070"
+    if kind == "cut":
+        return "#c07070"
+    return "#f5f0e8"
+
+def render_standings_card(rank, owner, total):
+    score_text, kind = fmt_score(total)
+    suffix_map = {1: "st", 2: "nd", 3: "rd"}
+    suffix = suffix_map.get(rank, "th")
+
+    card_class = "card-shell first-shell" if rank == 1 else "card-shell"
+
+    with st.container(border=False):
+        st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
+
+        top_left, top_mid, top_right = st.columns([1.1, 2.3, 0.8])
+
+        with top_left:
+            st.markdown(
+                f"""
+                <div style="
+                    text-align:center;
+                    font-family:'Playfair Display',serif;
+                    color:rgba(201,168,76,0.8);
+                    padding-top:0.45rem;
+                    font-size:0.95rem;
+                ">
+                    <div style="font-size:1.9rem;font-weight:700;color:#c9a84c;line-height:1;">{rank}</div>
+                    <div style="font-size:0.8rem;letter-spacing:0.08em;">{suffix}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with top_mid:
+            st.markdown(
+                f"""
+                <div style="
+                    font-family:'Cormorant Garamond',serif;
+                    color:#f5f0e8;
+                    font-size:1.45rem;
+                    font-weight:600;
+                    padding-top:0.8rem;
+                ">
+                    {owner}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with top_right:
+            badge = "🏅" if rank == 1 else ""
+            st.markdown(
+                f"""
+                <div style="
+                    text-align:right;
+                    padding-top:0.8rem;
+                    padding-right:0.4rem;
+                    font-size:1rem;
+                ">
+                    {badge}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        st.markdown(
+            f"""
+            <div style="
+                text-align:center;
+                font-family:'Playfair Display',serif;
+                font-size:1.8rem;
+                font-weight:700;
+                color:{score_color(kind)};
+                padding:0.1rem 0 1rem 0;
+            ">
+                {score_text}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+def render_breakdown_card(rank, owner, info):
+    total = info["total"]
+    total_text, total_kind = fmt_score(total)
+
+    with st.container(border=False):
+        st.markdown('<div class="breakdown-shell">', unsafe_allow_html=True)
+
+        st.markdown(
+            f"""
+            <div style="
+                font-family:'Playfair Display',serif;
+                font-size:1.3rem;
+                color:#c9a84c;
+                letter-spacing:0.05em;
+                border-bottom:1px solid rgba(201,168,76,0.22);
+                padding:0.9rem 1rem 0.7rem 1rem;
+                margin-bottom:0.1rem;
+            ">
+                #{rank} · {owner}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        header_cols = st.columns([3.2, 2.2])
+        with header_cols[0]:
+            st.markdown(
+                "<div style='color:rgba(245,240,232,0.68);font-size:0.95rem;padding:0.2rem 0 0.35rem 0.15rem;'>Player</div>",
+                unsafe_allow_html=True
+            )
+        with header_cols[1]:
+            st.markdown(
+                "<div style='color:rgba(245,240,232,0.68);font-size:0.95rem;padding:0.2rem 0.15rem 0.35rem 0;text-align:right;'>Score</div>",
+                unsafe_allow_html=True
+            )
+
+        for p in info["players"]:
+            row_cols = st.columns([3.2, 2.2])
+
+            with row_cols[0]:
+                st.markdown(
+                    f"""
+                    <div style="
+                        color:#f5f0e8;
+                        font-size:1.05rem;
+                        padding:0.28rem 0.15rem;
+                        border-top:1px solid rgba(255,255,255,0.045);
+                    ">
+                        {p['name']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            with row_cols[1]:
+                st.markdown(
+                    f"""
+                    <div style="
+                        color:{score_color(p['kind'])};
+                        font-size:1.05rem;
+                        font-weight:600;
+                        text-align:right;
+                        padding:0.28rem 0.15rem;
+                        border-top:1px solid rgba(255,255,255,0.045);
+                    ">
+                        {p['display']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+        st.markdown(
+            f"""
+            <div style="
+                font-family:'Cormorant Garamond',serif;
+                font-size:1.18rem;
+                font-weight:600;
+                color:{score_color(total_kind) if total_kind != 'even' else '#e8c97a'};
+                border-top:1px solid rgba(201,168,76,0.22);
+                margin-top:0.5rem;
+                padding:0.8rem 1rem 0.9rem 1rem;
+                text-align:right;
+                letter-spacing:0.04em;
+            ">
+                Pool Total: {total_text}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+#  HEADER
 # ─────────────────────────────────────────────
 st.markdown("""
 <div class="masters-header">
@@ -579,31 +718,20 @@ if not load_ok:
     st.error(f"⛳ Could not fetch leaderboard data: {err_msg}")
     st.stop()
 
+sorted_entries = sorted(data.items(), key=lambda x: x[1]["total"])
+
 # ─────────────────────────────────────────────
 #  STANDINGS OVERVIEW
 # ─────────────────────────────────────────────
-sorted_entries = sorted(data.items(), key=lambda x: x[1]["total"])
+st.markdown(
+    '<div class="section-divider"><span class="section-label">🏆 Standings</span></div>',
+    unsafe_allow_html=True
+)
 
-st.markdown('<div class="section-divider"><span class="section-label">🏆 Standings</span></div>', unsafe_allow_html=True)
-
-ordinals = {1: "st", 2: "nd", 3: "rd"}
-cards_html = '<div class="lb-grid">'
-for rank, (owner, info) in enumerate(sorted_entries, 1):
-    tot = info["total"]
-    s, cls = fmt_score(tot)
-    is_first = "first-place" if rank == 1 else ""
-    num_cls  = "first" if rank == 1 else ""
-    ribbon   = '<div class="jacket-ribbon"><span>🏅</span></div>' if rank == 1 else ""
-    suf = ordinals.get(rank, "th")
-    cards_html += f"""
-    <div class="lb-card {is_first}">
-        {ribbon}
-        <div class="lb-rank"><span class="lb-rank-num {num_cls}">{rank}</span><sup>{suf}</sup></div>
-        <div class="lb-name">{owner}</div>
-        <div class="lb-score {cls}">{s}</div>
-    </div>"""
-cards_html += '</div>'
-st.markdown(cards_html, unsafe_allow_html=True)
+stand_cols = st.columns(len(sorted_entries))
+for i, (owner, info) in enumerate(sorted_entries):
+    with stand_cols[i]:
+        render_standings_card(i + 1, owner, info["total"])
 
 # ─────────────────────────────────────────────
 #  INFO BOX
@@ -612,36 +740,24 @@ ws_disp = f"+{worst_score}" if worst_score > 0 else ("E" if worst_score == 0 els
 st.markdown(f"""
 <div class="info-box">
     ⛳ <strong>Scoring:</strong> Pool score = sum of each player's score to par.
-    Players who miss the cut: their cut score + the field's worst score ({ws_disp}) is applied.
+    If a player misses the cut, their cut score plus the field's worst current score ({ws_disp}) is applied.
     Scores refresh every 2 minutes.
 </div>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-#  PLAYER BREAKDOWNS (2-column layout)
+#  PLAYER BREAKDOWNS
 # ─────────────────────────────────────────────
-st.markdown('<div class="section-divider"><span class="section-label">🌿 Player Breakdown</span></div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="section-divider"><span class="section-label">🌿 Player Breakdown</span></div>',
+    unsafe_allow_html=True
+)
 
-cols = st.columns(2)
+break_cols = st.columns(2)
 for i, (owner, info) in enumerate(sorted_entries):
-    col = cols[i % 2]
-    with col:
-        rows_html = ""
-        for p in info["players"]:
-            rows_html += f"""
-            <div class="player-row">
-                <span class="player-name">{p['name']}</span>
-                <span class="player-score {p['kind']}">{p['display']}</span>
-            </div>"""
-        tot = info["total"]
-        ts, _ = fmt_score(tot)
-        rank_label = next(r + 1 for r, (o, _) in enumerate(sorted_entries) if o == owner)
-        st.markdown(f"""
-        <div class="breakdown-section">
-            <div class="breakdown-title">#{rank_label} &nbsp;·&nbsp; {owner}</div>
-            {rows_html}
-            <div class="breakdown-total">Pool Total: {ts}</div>
-        </div>""", unsafe_allow_html=True)
+    with break_cols[i % 2]:
+        render_breakdown_card(i + 1, owner, info)
+        st.write("")
 
 # ─────────────────────────────────────────────
 #  FOOTER
