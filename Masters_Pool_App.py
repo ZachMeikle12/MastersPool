@@ -310,7 +310,7 @@ def fmt_score(val):
 # ─────────────────────────────────────────────
 @st.cache_data(ttl=120, show_spinner=False)
 def fetch_leaderboard():
-    url = "www.espn.com/golf/leaderboard?season=2025&tournamentId=401811941"
+    url = "https://www.espn.com/golf/leaderboard?season=2025&tournamentId=401811941"
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0)",
         "Accept-Language": "en-US,en;q=0.9",
