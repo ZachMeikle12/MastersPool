@@ -192,7 +192,7 @@ groups = {
         "Bryson DeChambeau",
         "Xander Schauffele",
         "Nicolai Højgaard",
-        "Hideki Matsuyama",
+        "Jon Rahm",
         "Matt Fitzpatrick",
         "Jon Rahm",
         "Patrick Reed",
