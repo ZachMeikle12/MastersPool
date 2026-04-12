@@ -192,7 +192,7 @@ groups = {
         "Bryson DeChambeau",
         "Xander Schauffele",
         "Nicolai Højgaard",
-        "Jon Rahm",
+        "Hideki Matsuyama",
         "Matt Fitzpatrick",
         "Jon Rahm",
         "Patrick Reed",
@@ -279,12 +279,12 @@ def scorecheck(s):
     if s is None:
         return None
     try:
-        s = str(s).strip().replace("−", "-").replace("–", "-").replace("+", "")
+        s = str(s).strip().replace("−", "-").replace("–", "-")
         if s in ("E", "Even", ""):
             return 0
         if s.upper() in ("CUT", "--", "WD", "DQ"):
             return None
-        return int(s)
+        return int(s.replace("+", ""))
     except Exception:
         return None
 
@@ -336,11 +336,18 @@ def parse_score_token(tokens):
             return i, t
     return None, "--"
 
+def round_total_to_par(x):
+    try:
+        if x in (None, ""):
+            return None
+        val = int(x)
+        if 60 <= val <= 90:
+            return val - 72
+        return None
+    except Exception:
+        return None
+
 def format_position_labels(sorted_entries):
-    """
-    Returns a dict of owner -> rank label, e.g.
-    T1, T1, 3, 4
-    """
     labels = {}
     prev_score = None
     prev_rank = None
@@ -351,13 +358,8 @@ def format_position_labels(sorted_entries):
         if score == prev_score:
             labels[owner] = f"T{prev_rank}"
         else:
-            # Look ahead to see if this score is tied
-            count_same = sum(1 for _, inf in sorted_entries if inf["total"] == score)
-            if count_same > 1:
-                labels[owner] = f"T{idx}"
-            else:
-                labels[owner] = str(idx)
-
+            tie_count = sum(1 for _, inf in sorted_entries if inf["total"] == score)
+            labels[owner] = f"T{idx}" if tie_count > 1 else str(idx)
             prev_score = score
             prev_rank = idx
 
@@ -385,12 +387,10 @@ def fetch_leaderboard():
 
     resp = requests.get(url, headers=headers, timeout=20)
     resp.raise_for_status()
-
     soup = BeautifulSoup(resp.text, "html.parser")
 
     rows = []
     seen = set()
-
     player_links = soup.find_all("a", href=True)
 
     for a in player_links:
@@ -432,16 +432,21 @@ def fetch_leaderboard():
             if idx + 2 < len(tokens):
                 thru = tokens[idx + 2]
 
-            numeric_tokens = [t for t in tokens if t.isdigit()]
+            numeric_tokens = []
+            for t in tokens:
+                if t.isdigit():
+                    val = int(t)
+                    if 60 <= val <= 90:
+                        numeric_tokens.append(str(val))
 
             if len(numeric_tokens) >= 4:
-                r1, r2, r3, r4 = numeric_tokens[-4], numeric_tokens[-3], numeric_tokens[-2], numeric_tokens[-1]
+                r1, r2, r3, r4 = numeric_tokens[0], numeric_tokens[1], numeric_tokens[2], numeric_tokens[3]
             elif len(numeric_tokens) == 3:
-                r1, r2, r3 = numeric_tokens[-3], numeric_tokens[-2], numeric_tokens[-1]
+                r1, r2, r3 = numeric_tokens[0], numeric_tokens[1], numeric_tokens[2]
             elif len(numeric_tokens) == 2:
-                r1, r2 = numeric_tokens[-2], numeric_tokens[-1]
+                r1, r2 = numeric_tokens[0], numeric_tokens[1]
             elif len(numeric_tokens) == 1:
-                r1 = numeric_tokens[-1]
+                r1 = numeric_tokens[0]
 
         rows.append({
             "name": name,
@@ -451,6 +456,10 @@ def fetch_leaderboard():
             "r2": r2,
             "r3": r3,
             "r4": r4,
+            "r1_par": round_total_to_par(r1),
+            "r2_par": round_total_to_par(r2),
+            "r3_par": round_total_to_par(r3),
+            "r4_par": round_total_to_par(r4),
         })
         seen.add(key)
 
@@ -470,21 +479,14 @@ def compute(rows):
     for row in rows:
         leaderboard_lookup[normalize(row["name"])] = row
 
-        try:
-            r3 = int(row["r3"]) if row.get("r3") not in (None, "") else None
-        except Exception:
-            r3 = None
+        r3_par = row.get("r3_par")
+        r4_par = row.get("r4_par")
 
-        try:
-            r4 = int(row["r4"]) if row.get("r4") not in (None, "") else None
-        except Exception:
-            r4 = None
+        if isinstance(r3_par, int):
+            saturday_worst = max(saturday_worst, r3_par)
 
-        if r3 is not None:
-            saturday_worst = max(saturday_worst, r3 - 72)
-
-        if r4 is not None:
-            sunday_worst = max(sunday_worst, r4 - 72)
+        if isinstance(r4_par, int):
+            sunday_worst = max(sunday_worst, r4_par)
 
     results = {}
 
@@ -510,43 +512,27 @@ def compute(rows):
             val = scorecheck(scr)
 
             if scr.upper() == "CUT":
-                r1_raw = row.get("r1")
-                r2_raw = row.get("r2")
+                r1_par = row.get("r1_par")
+                r2_par = row.get("r2_par")
 
-                try:
-                    r1 = int(r1_raw) if r1_raw not in (None, "") else None
-                    r2 = int(r2_raw) if r2_raw not in (None, "") else None
-                except Exception:
-                    r1, r2 = None, None
-
-                if r1 is not None and r2 is not None:
-                    cut_score = (r1 + r2) - 144
-                    combined = cut_score + saturday_worst + sunday_worst
-                    total += combined
-
-                    cut_str = f"+{cut_score}" if cut_score > 0 else ("E" if cut_score == 0 else str(cut_score))
-                    sat_str = f"+{saturday_worst}" if saturday_worst > 0 else ("E" if saturday_worst == 0 else str(saturday_worst))
-                    sun_str = f"+{sunday_worst}" if sunday_worst > 0 else ("E" if sunday_worst == 0 else str(sunday_worst))
-
-                    player_details.append({
-                        "name": player,
-                        "display": f"CUT ({cut_str}) + Sat ({sat_str}) + Sun ({sun_str}) = {combined:+}",
-                        "kind": "cut",
-                        "value": combined,
-                    })
+                if isinstance(r1_par, int) and isinstance(r2_par, int):
+                    cut_score = r1_par + r2_par
                 else:
-                    combined = saturday_worst + sunday_worst
-                    total += combined
+                    cut_score = 0
 
-                    sat_str = f"+{saturday_worst}" if saturday_worst > 0 else ("E" if saturday_worst == 0 else str(saturday_worst))
-                    sun_str = f"+{sunday_worst}" if sunday_worst > 0 else ("E" if sunday_worst == 0 else str(sunday_worst))
+                combined = cut_score + saturday_worst + sunday_worst
+                total += combined
 
-                    player_details.append({
-                        "name": player,
-                        "display": f"CUT — using Sat ({sat_str}) + Sun ({sun_str}) = {combined:+}",
-                        "kind": "cut",
-                        "value": combined,
-                    })
+                cut_str = f"+{cut_score}" if cut_score > 0 else ("E" if cut_score == 0 else str(cut_score))
+                sat_str = f"+{saturday_worst}" if saturday_worst > 0 else ("E" if saturday_worst == 0 else str(saturday_worst))
+                sun_str = f"+{sunday_worst}" if sunday_worst > 0 else ("E" if sunday_worst == 0 else str(sunday_worst))
+
+                player_details.append({
+                    "name": player,
+                    "display": f"CUT ({cut_str}) + Sat ({sat_str}) + Sun ({sun_str}) = {combined:+}",
+                    "kind": "cut",
+                    "value": combined,
+                })
 
             elif val == 0:
                 player_details.append({
@@ -792,13 +778,17 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-stand_cols = st.columns(len(sorted_entries))
 top_score = sorted_entries[0][1]["total"] if sorted_entries else None
+num_people = len(sorted_entries)
+cards_per_row = 4 if num_people >= 8 else num_people
 
-for i, (owner, info) in enumerate(sorted_entries):
-    with stand_cols[i]:
-        is_first = info["total"] == top_score
-        render_standings_card(rank_labels[owner], owner, info["total"], is_first=is_first)
+for start in range(0, num_people, cards_per_row):
+    chunk = sorted_entries[start:start + cards_per_row]
+    cols = st.columns(len(chunk))
+    for col, (owner, info) in zip(cols, chunk):
+        with col:
+            is_first = info["total"] == top_score
+            render_standings_card(rank_labels[owner], owner, info["total"], is_first=is_first)
 
 # ─────────────────────────────────────────────
 #  INFO BOX
@@ -834,6 +824,6 @@ for i, (owner, info) in enumerate(sorted_entries):
 st.markdown("""
 <div style="text-align:center;padding:2rem 0 1rem;opacity:0.4;font-family:'Cormorant Garamond',serif;
 letter-spacing:0.15em;font-size:0.85rem;text-transform:uppercase;color:#c9a84c;">
-    A tradition unlike any other &nbsp;·&nbsp;
+    A tradition unlike any other &nbsp;·&nbsp; Data via ESPN
 </div>
 """, unsafe_allow_html=True)
